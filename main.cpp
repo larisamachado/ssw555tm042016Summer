@@ -13,10 +13,19 @@ using namespace std;
  * tag = line's tag; if N/A, "Invalid tag"
  * test = file that code is parsing through
  * result = file where output is printed
+ * firstNames = array that holds the first name of each individual
+ * lastNames = array that holds the last name of each individual
+ * FAMs = array that holds each family
+ * indiv = flag that dictates if the info being read is from an INDI
+ * it = iterator for firstNames and lastNames
  */
 string data, tag = "Invalid tag";
 fstream test, result;
-
+string firstNames[5000];
+string lastNames[5000];
+string FAMs[1000];
+bool indiv = false;
+int it = 0;
 
 /* Takes in the line's current level
  * prints the level to output and output.txt
@@ -44,6 +53,7 @@ void restOfLine() {
 int foundAZero() {
 	test >> data;
 	if(data == "HEAD" || data == "TRLR" || data == "NOTE") {
+		indiv = false;
 		tag = data;
 		cout << data << '\n';
 		result << data << endl;
@@ -52,13 +62,19 @@ int foundAZero() {
 		result << data << " ";
 		test >> data;
 		if(data == "INDI" || data == "FAM") {
+			if(data == "INDI") {
+				indiv = true;
+				it++;
+			}
 			tag = data;
 			cout << data << '\n';
 			result << data << endl;
 		} else {
+			indiv = false;
 			restOfLine();
 		}
 	} else {
+		indiv = false;
 		restOfLine();
 	}
 	return 0;
@@ -72,7 +88,16 @@ int foundAOne() {
 	test >> data;
 	if(data == "NAME" || data == "SEX" || data == "FAMC" || data == "FAMS" || data == "HUSB" || data == "WIFE" || data == "CHIL") {
 		tag = data;
-		restOfLine();
+		if(data == "NAME" && indiv == true) {
+			cout << data;
+			result << data;
+			getline(test, data);
+			cout << data << '\n';
+			result << data << endl;
+			firstNames[it] = data;
+		} else {
+			restOfLine();
+		}
 	} else if(data == "BIRT" || data == "MARR" || data == "DIV") {
 		tag = data;
 		cout << data << '\n';
@@ -107,6 +132,7 @@ int foundATwo() {
  */
 int main() {
 	string num;
+	int j;
 	test.open("GEDCOM_test.ged", ios::in);
 	result.open("output.txt", ios::out);
 	test >> data;
@@ -131,6 +157,20 @@ int main() {
 		printLevel(num);
 		test >> data;
 	}
+
+	cout << '\n' << "========================== INDIs ============================" << '\n';
+	result << '\n' << "========================== INDIs ============================" << endl;
+	for(j = 1; j < it; j++) {
+		cout << "@I" << j << "@ ";
+		cout << firstNames[j] << '\n';
+
+		result << "@I" << j << "@ ";
+		result << firstNames[j] << endl;
+	}
+
+	cout << '\n' << "========================== FAMs =============================" << '\n';
+	result << '\n' << "========================== FAMs =============================" << '\n';
+
 	test.close();
 	result.close();
 	return 0;
