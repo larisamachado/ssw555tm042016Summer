@@ -17,20 +17,17 @@ using namespace std;
  * tag = line's tag; if N/A, "Invalid tag"
  * test = file that code is parsing through
  * result = file where output is printed
- * firstNames = array that holds the first name of each individual
- * lastNames = array that holds the last name of each individual
- * FAMs = array that holds each family
+ * INDIs = array that holds the first name of each individual
+ * FAMs = array that holds the families
  * indiv = flag that dictates if the info being read is from an INDI
- * family = flag that dictates which line of the info being read is from a FAM
  * it = iterator for INDIs
- * fit = iterator for FAMs
  */
 string data, tag = "Invalid tag";
 fstream test, result;
 string INDIs[5000][2];
-int FAMs[1000][5000];
+string FAMs[1000];
 bool indiv = false;
-int family = -1, it = 0, fit = 0;
+int it = 0;
 
 /* Takes in the line's current level
  * prints the level to output and output.txt
@@ -66,13 +63,12 @@ int foundAZero() {
 		cout << data << " ";
 		result << data << " ";
 		test >> data;
+
+		//flags when line describes a FAM or INDI
 		if(data == "INDI" || data == "FAM") {
 			if(data == "INDI") {
 				indiv = true;
 				it++;
-			} else if(data == "FAM") {
-				family = 0;
-				fit++;
 			}
 			tag = data;
 			cout << data << '\n';
@@ -94,36 +90,28 @@ int foundAZero() {
  */
 int foundAOne() {
 	test >> data;
-	if(data == "NAME" || data == "SEX" || data == "FAMC" || data == "FAMS" || data == "HUSB" || data == "WIFE" || data == "CHIL") {
+	if(data == "HUSB" || data == "WIFE" || data == "CHIL") {
 		tag = data;
-		if(data == "NAME" && indiv == true) {
-			restOfLine();
+		restOfLine();
+	} else if(data == "NAME" && indiv == true) {
+		tag = data;
+		restOfLine();
 
-			/* divides the INDIs name to first and last
-			 * removes the '/' surrounding the last name
-			 */
-			char* fullName = &data[0];
-			char* splitName = strtok(fullName, " /");
-			INDIs[it][0] = splitName;
-			splitName = strtok(NULL, " /");
-			INDIs[it][1] = splitName;
-		} else if((data == "HUSB" || data == "WIFE" || data == "CHIL") && family > -1) {
-			restOfLine();
-
-			char* ID = &data[0];
-			char* person = strtok(ID, " @I");
-			FAMs[fit][family] = atoi(person);
-			family++;
-		} else {
-			restOfLine();
-		}
+		/* divides the INDIs name to first and last
+		 * removes the '/' surrounding the last name
+		 */
+		char* fullName = &data[0];
+		char* splitName = strtok(fullName, " /");
+		INDIs[it][0] = splitName;
+		splitName = strtok(NULL, " /");
+		INDIs[it][1] = splitName;
+	} else if(data == "NAME" || data == "SEX" || data == "FAMC" || data == "FAMS" || data == "DEAT") {
+		tag = data;
+		restOfLine();
 	} else if(data == "BIRT" || data == "MARR" || data == "DIV") {
 		tag = data;
 		cout << data << '\n';
 		result << data << endl;
-	} else if(data == "DEAT") {
-		tag = data;
-		restOfLine();
 	} else {
 		restOfLine();
 	}
@@ -189,19 +177,6 @@ int main() {
 
 	cout << '\n' << "========================== FAMs =============================" << '\n';
 	result << '\n' << "========================== FAMs =============================" << endl;
-	for(j = 1; j <= fit; j++) {
-		cout << "@F" << j << "@:" << '\n';
-		cout << "  Husband: @I" << FAMs[j][0] << "@" << '\n';
-		cout << "    " << INDIs[FAMs[j][0]][0] << " " << INDIs[FAMs[j][0]][1] << '\n';
-		cout << "  Wife: @I" << FAMs[j][1] << "@" << '\n';
-		cout << "    " << INDIs[FAMs[j][1]][0] << " " << INDIs[FAMs[j][1]][1] << '\n';
-
-		result << "@F" << j << "@:" << '\n';
-		result << "  Husband: @I" << FAMs[j][0] << "@" << endl;
-		result << "    " << INDIs[FAMs[j][0]][0] << " " << INDIs[FAMs[j][0]][1] << endl;
-		result << "  Wife: @I" << FAMs[j][1] << "@" << endl;
-		result << "    " << INDIs[FAMs[j][1]][0] << " " << INDIs[FAMs[j][1]][1] << endl;
-	}
 
 	test.close();
 	result.close();
