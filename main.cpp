@@ -6,6 +6,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <string.h>
+#include <stdio.h>
+#include <cstring>
+#include <stdlib.h>
 using namespace std;
 
 /* Global variables
@@ -13,10 +17,17 @@ using namespace std;
  * tag = line's tag; if N/A, "Invalid tag"
  * test = file that code is parsing through
  * result = file where output is printed
+ * INDIs = array that holds the first name of each individual
+ * FAMs = array that holds the families
+ * indiv = flag that dictates if the info being read is from an INDI
+ * it = iterator for INDIs
  */
 string data, tag = "Invalid tag";
 fstream test, result;
-
+string INDIs[5000][2];
+string FAMs[1000];
+bool indiv = false;
+int it = 0;
 
 /* Takes in the line's current level
  * prints the level to output and output.txt
@@ -44,6 +55,7 @@ void restOfLine() {
 int foundAZero() {
 	test >> data;
 	if(data == "HEAD" || data == "TRLR" || data == "NOTE") {
+		indiv = false;
 		tag = data;
 		cout << data << '\n';
 		result << data << endl;
@@ -51,14 +63,22 @@ int foundAZero() {
 		cout << data << " ";
 		result << data << " ";
 		test >> data;
+
+		//flags when line describes a FAM or INDI
 		if(data == "INDI" || data == "FAM") {
+			if(data == "INDI") {
+				indiv = true;
+				it++;
+			}
 			tag = data;
 			cout << data << '\n';
 			result << data << endl;
 		} else {
+			indiv = false;
 			restOfLine();
 		}
 	} else {
+		indiv = false;
 		restOfLine();
 	}
 	return 0;
@@ -70,16 +90,28 @@ int foundAZero() {
  */
 int foundAOne() {
 	test >> data;
-	if(data == "NAME" || data == "SEX" || data == "FAMC" || data == "FAMS" || data == "HUSB" || data == "WIFE" || data == "CHIL") {
+	if(data == "HUSB" || data == "WIFE" || data == "CHIL") {
+		tag = data;
+		restOfLine();
+	} else if(data == "NAME" && indiv == true) {
+		tag = data;
+		restOfLine();
+
+		/* divides the INDIs name to first and last
+		 * removes the '/' surrounding the last name
+		 */
+		char* fullName = &data[0];
+		char* splitName = strtok(fullName, " /");
+		INDIs[it][0] = splitName;
+		splitName = strtok(NULL, " /");
+		INDIs[it][1] = splitName;
+	} else if(data == "NAME" || data == "SEX" || data == "FAMC" || data == "FAMS" || data == "DEAT") {
 		tag = data;
 		restOfLine();
 	} else if(data == "BIRT" || data == "MARR" || data == "DIV") {
 		tag = data;
 		cout << data << '\n';
 		result << data << endl;
-	} else if(data == "DEAT") {
-		tag = data;
-		restOfLine();
 	} else {
 		restOfLine();
 	}
@@ -107,6 +139,7 @@ int foundATwo() {
  */
 int main() {
 	string num;
+	int j;
 	test.open("GEDCOM_test.ged", ios::in);
 	result.open("output.txt", ios::out);
 	test >> data;
@@ -131,6 +164,20 @@ int main() {
 		printLevel(num);
 		test >> data;
 	}
+
+	cout << '\n' << "========================== INDIs ============================" << '\n';
+	result << '\n' << "========================== INDIs ============================" << endl;
+	for(j = 1; j <= it; j++) {
+		cout << "@I" << j << "@: ";
+		cout << INDIs[j][0] << " " << INDIs[j][1] << '\n';
+
+		result << "@I" << j << "@: ";
+		result << INDIs[j][0] << " " << INDIs[j][1] << endl;
+	}
+
+	cout << '\n' << "========================== FAMs =============================" << '\n';
+	result << '\n' << "========================== FAMs =============================" << endl;
+
 	test.close();
 	result.close();
 	return 0;
