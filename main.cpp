@@ -96,23 +96,23 @@ int foundAZero() {
 int foundAOne() {
 	test >> data;
 	if(data == "HUSB" || data == "WIFE" || data == "CHIL") {
-		if (data == "HUSB" && fam == true) {
+		if (data == "HUSB" && fam == true ) {
 		test >> data;
-		
-		//FAMs[fam_it]1] = data[2];
-		cout<< "debug" << endl;
-		//char temp = data[2];
-		//data[2].erase (data[2].begin()-2);
-		//data[2].erase (data[2].end()-1);
-		cout<< data[2] << " " << fam_it << endl;
-		FAMs[fam_it][0] = data[2];	
-		} else if (data == "WIFE" && fam == true) {
+		string temp = data;
+		temp.erase (temp.begin()-1);
+		temp.erase(temp.begin()-1);
+		temp.erase (temp.end()-1);
+		cout<< temp << " " << fam_it << endl;
+		FAMs[fam_it][0] = temp;	
+		}
+		 else if (data == "WIFE" && fam == true) {
 		test >> data;
-		
-		//FAMs[fam_it]1] = data[2];
-		cout<< "debug" << endl;
-		cout<< data[2] << " " << fam_it << endl;
-		FAMs[fam_it][1] = data[2];
+		string temp = data;
+		temp.erase (temp.begin()-1);
+		temp.erase(temp.begin()-1);
+		temp.erase (temp.end()-1);
+		cout<< temp << " " << fam_it << endl;
+		FAMs[fam_it][1] = temp;
 		}
 		tag = data;
 		restOfLine();
@@ -202,10 +202,28 @@ int main() {
 	result << '\n' << "========================== FAMs =============================" << endl;
 	for(j = 1; j <= fam_it; j++) {
 		cout << "Family ID:" << "@F" << j << "@: " << '\n';
-		cout << "Husband ID:" << FAMs[j][0] << '\n';
-		cout << "Wife ID:" << FAMs[j][1] << '\n';
-
+		cout << "Husband ID:" << "@I" << FAMs[j][0] << "@" << '\n';
+		string temp = FAMs[j][0];
+		int temp1 = atoi(temp.c_str());
+		cout<< "Husband Name:" << INDIs[temp1][0] <<" "<<INDIs[temp1][1] <<"\n";
+		
+		cout << "Wife ID:" <<"@I"<< FAMs[j][1] <<"@"<< '\n';
+		string temp_W = FAMs[j][1];
+		int temp2 = atoi(temp_W.c_str());
+		cout<< "Wife Name:" << INDIs[temp2][0] <<" "<< INDIs[temp2][1] <<"\n";
+		
+		// Writing to output.txt
 		result << "Family ID:" << "@F" << j << "@: " << '\n';
+		result << "Husband ID:" << "@I" << FAMs[j][0] << "@" << '\n';
+		string temp_H1 = FAMs[j][0];
+		int temp3 = atoi(temp_H1.c_str());
+		result<< "Husband Name:" << INDIs[temp3][0] <<" "<<INDIs[temp3][1] <<"\n";
+		
+		result<< "Wife ID:" <<"@I"<< FAMs[j][1] <<"@"<< '\n';
+		string temp_W1 = FAMs[j][1];
+		int temp4 = atoi(temp_W1.c_str());
+		result<< "Wife Name:" << INDIs[temp4][0] <<" "<< INDIs[temp4][1] <<"\n";
+		
 		result << "Husband ID:" << FAMs[j][0] << '\n';
 		result << "Wife ID:" << FAMs[j][1] << '\n';
 	}
