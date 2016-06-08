@@ -15,6 +15,7 @@ using namespace std;
 /* Global variables
  * data = current string pulled from GEDCOM file
  * tag = line's tag; if N/A, "Invalid tag"
+ * date = states which tag the date belongs to
  * test = file that code is parsing through
  * result = file where output is printed
  * indiv = flag that dictates if the info being read is from an INDI
@@ -22,7 +23,7 @@ using namespace std;
  * fam = flag that dictates if new FAM is read
  * fam_it = iterator for FAMs
  */
-string data, tag = "Invalid tag";
+string data, tag = "Invalid tag", date = "N/A";
 fstream test, result;
 bool indiv = false, fam = false;
 int indiv_it = 0, fam_it = 0;
@@ -50,6 +51,7 @@ string INDIs[5000][7];
  * FAMs[x][y] = Child's ID (where y is from 5-19 since allowed up to 15 children)
  */
 string FAMs[1000][20];
+
 
 /* Takes in the line's current level
  * prints the level to output and output.txt
@@ -122,7 +124,6 @@ int foundAOne() {
 		temp.erase (temp.begin()-1);
 		temp.erase(temp.begin()-1);
 		temp.erase (temp.end()-1);
-		cout<< temp << " " << fam_it << endl;
 		FAMs[fam_it][0] = temp;
 		}
 		 else if (data == "WIFE" && fam == true) {
@@ -131,7 +132,6 @@ int foundAOne() {
 		temp.erase (temp.begin()-1);
 		temp.erase(temp.begin()-1);
 		temp.erase (temp.end()-1);
-		cout<< temp << " " << fam_it << endl;
 		FAMs[fam_it][1] = temp;
 		}
 		tag = data;
@@ -152,13 +152,13 @@ int foundAOne() {
 		tag = data;
 		restOfLine();
 		INDIs[indiv_it][2] = data[1];
-	} else if(data == "NAME" || data == "FAMC" || data == "FAMS" || data == "DEAT") {
+	} else if(data == "NAME" || data == "FAMC" || data == "FAMS") {
 		tag = data;
 		restOfLine();
-	} else if(data == "BIRT" || data == "MARR" || data == "DIV") {
+	} else if(data == "BIRT" || data == "MARR" || data == "DIV" || data == "DEAT") {
+		date = data;
 		tag = data;
-		cout << data << '\n';
-		result << data << endl;
+		restOfLine();
 	} else {
 		restOfLine();
 	}
@@ -174,10 +174,121 @@ int foundATwo() {
 	if(data == "DATE") {
 		tag = data;
 		restOfLine();
+		data.erase (data.end()-1);
+		if(date == "BIRT") {
+			INDIs[indiv_it][3] = data;
+		} else if(date == "DEAT") {
+			INDIs[indiv_it][4] = data;
+		} else if(date == "MARR") {
+			FAMs[fam_it][2] = data;
+		} else if(date == "DIV") {
+			FAMs[fam_it][3] = data;
+		}
 	} else {
 		restOfLine();
 	}
 	return 0;
+}
+
+/* Converts months to the appropriate number representation
+ * returns -1 if the string is unrecognized
+ */
+int monthToInt(string m) {
+	if(m == "JAN") {
+		return 1;
+	} else if(m == "FEB") {
+		return 2;
+	} else if(m == "MAR") {
+		return 3;
+	} else if (m == "APR") {
+		return 4;
+	} else if(m == "MAY") {
+		return 5;
+	} else if(m == "JUN") {
+		return 6;
+	} else if(m == "JUL") {
+		return 7;
+	} else if(m == "AUG") {
+		return 8;
+	} else if(m == "SEP") {
+		return 9;
+	} else if(m == "OCT") {
+		return 10;
+	} else if(m == "NOV") {
+		return 11;
+	} else if(m == "DEC") {
+		return 12;
+	} else {
+		return -1;
+	}
+}
+
+/* reads in a string in form of DAY MONTH YEAR
+ * parses through the string and places the day, month, year into a char**
+ */
+char** splitTheDate(string s) {
+	char** d = (char**)malloc(4*sizeof(char*));
+	char* theDate = &s[0];
+	char* splitDate = strtok(theDate, " /");
+	d[0] = splitDate;
+	splitDate = strtok(NULL, " /");
+	d[1] = splitDate;
+	splitDate = strtok(NULL, " /");
+	d[2] = splitDate;
+	return d;
+}
+
+/* US02: Birth before marriage
+ * prints error message if INDI's birth date occurs after marriage
+ */
+void bornBeforeMarriage() {
+	int j, k, day;
+	string current;
+	char** marriage = (char**)malloc(4*sizeof(char*));
+	char** indiv;
+	int id;
+	for(j = 1; j <= fam_it; j++) {
+		//split the marriage date to day, month, year
+		marriage = splitTheDate(FAMs[j][2]);
+
+		for(k = 0; k < 2; k++) {
+			//split the INDI's birth date to day, month, year
+			id = atoi(FAMs[j][k].c_str());
+			indiv = splitTheDate(INDIs[id][3]);
+
+			//keeps track of day, because monthToInt overrides indiv[0]
+			day = atoi(indiv[0]);
+
+			//compare the years, then months, then days
+			if(atoi(marriage[2]) < atoi(indiv[2])) {
+				cout << "Error US02: Birth Date of " << INDIs[id][0] << " " << INDIs[id][1] << " (@I" << id << "@) occurs after marriage date in Family @F" << j << "@." << '\n';
+				cout << "  Marriage Date: " << marriage[0] << " " << marriage[1] << " " << marriage[2] << '\n';
+				cout << "  Birth Date: " << indiv[0] << " " << indiv[1] << " " << indiv[2] << '\n';
+
+				result << "Error US02: Birth Date of " << INDIs[id][0] << " " << INDIs[id][1] << " (@I" << id << "@) occurs after marriage date in Family @F" << j << "@." << endl;
+				result << "  Marriage Date: " << marriage[0] << " " << marriage[1] << " " << marriage[2] << endl;
+				result << "  Birth Date: " << indiv[0] << " " << indiv[1] << " " << indiv[2] << endl;
+			} else if(atoi(marriage[2]) == atoi(indiv[2]) && monthToInt(marriage[1]) < monthToInt(indiv[1])) {
+				cout << "Error US02: Birth Date of " << INDIs[id][0] << " " << INDIs[id][1] << " (@I" << id << "@) occurs after marriage date in Family @F" << j << "@." << '\n';
+				cout << "  Marriage Date: " << marriage[0] << " " << marriage[1] << " " << marriage[2] << '\n';
+				cout << "  Birth Date: " << day << " " << indiv[1] << " " << indiv[2] << '\n';
+
+				result << "Error US02: Birth Date of " << INDIs[id][0] << " " << INDIs[id][1] << " (@I" << id << "@) occurs after marriage date in Family @F" << j << "@." << endl;
+				result << "  Marriage Date: " << marriage[0] << " " << marriage[1] << " " << marriage[2] << endl;
+				result << "  Birth Date: " << day << " " << indiv[1] << " " << indiv[2] << endl;
+			} else if(atoi(marriage[2]) == atoi(indiv[2]) && monthToInt(marriage[1]) == monthToInt(indiv[1]) && atoi(marriage[0]) <= day) {
+				cout << "Error US02: Birth Date of " << INDIs[id][0] << " " << INDIs[id][1] << " (@I" << id << "@) occurs after marriage date in Family @F" << j << "@." << '\n';
+				cout << "  Marriage Date: " << marriage[0] << " " << marriage[1] << " " << marriage[2] << '\n';
+				cout << "  Birth Date: " << day << " " << indiv[1] << " " << indiv[2] << '\n';
+
+				result << "Error US02: Birth Date of " << INDIs[id][0] << " " << INDIs[id][1] << " (@I" << id << "@) occurs after marriage date in Family @F" << j << "@." << endl;
+				result << "  Marriage Date: " << marriage[0] << " " << marriage[1] << " " << marriage[2] << endl;
+				result << "  Birth Date: " << day << " " << indiv[1] << " " << indiv[2] << endl;
+			}
+		}
+	}
+	free(marriage);
+	free(indiv);
 }
 
 /* opens GEDCOM file and creates new output.txt
@@ -212,18 +323,20 @@ int main() {
 		test >> data;
 	}
 
-	cout << '\n' << "========================== INDIs ============================" << '\n';
-	result << '\n' << "========================== INDIs ============================" << endl;
+	//print the IDs and names of all individuals
+	cout << '\n' << "========================== INDIs - Names and IDs ============================" << '\n';
+	result << '\n' << "========================== INDIs - Names and IDs ============================" << endl;
 	for(j = 1; j <= indiv_it; j++) {
 		cout << "@I" << j << "@: ";
-		cout << INDIs[j][0] << " " << INDIs[j][1] << '\n'; 
+		cout << INDIs[j][0] << " " << INDIs[j][1] << '\n';
 
 		result << "@I" << j << "@: ";
 		result << INDIs[j][0] << " " << INDIs[j][1] << endl;
 	}
 
-	cout << '\n' << "========================== FAMs =============================" << '\n';
-	result << '\n' << "========================== FAMs =============================" << endl;
+	//print the family IDs as well as names and IDs of all husbands and wives
+	cout << '\n' << "========================== FAMs - IDs and Spouses' Names and IDs =============================" << '\n';
+	result << '\n' << "========================== FAMs - IDs and Spouses' Names and IDs =============================" << endl;
 	for(j = 1; j <= fam_it; j++) {
 		cout << "Family ID: " << "@F" << j << "@: " << '\n';
 		cout << "Husband ID: " << "@I" << FAMs[j][0] << "@" << '\n';
@@ -248,6 +361,11 @@ int main() {
 		int temp4 = atoi(temp_W1.c_str());
 		result << "Wife Name: " << INDIs[temp4][0] << " " << INDIs[temp4][1] <<"\n";
 	}
+
+	//print anyone who was married before their birthdate; else passes
+	cout << '\n' << "========================== US02 - Birth before Marriage =============================" << '\n';
+	result << '\n' << "========================== US02 - Birth before Marriage =============================" << endl;
+	bornBeforeMarriage();
 
 	test.close();
 	result.close();
