@@ -51,7 +51,6 @@ string INDIs[5000][7];
  */
 string FAMs[1000][20];
 
-
 /* Takes in the line's current level
  * prints the level to output and output.txt
  */
@@ -217,7 +216,7 @@ int main() {
 	result << '\n' << "========================== INDIs ============================" << endl;
 	for(j = 1; j <= indiv_it; j++) {
 		cout << "@I" << j << "@: ";
-		cout << INDIs[j][0] << " " << INDIs[j][1] << '\n';
+		cout << INDIs[j][0] << " " << INDIs[j][1] << '\n'; 
 
 		result << "@I" << j << "@: ";
 		result << INDIs[j][0] << " " << INDIs[j][1] << endl;
